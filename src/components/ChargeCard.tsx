@@ -1,18 +1,48 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { theme } from '../theme';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import Feather from 'react-native-vector-icons/Feather';
 
 type ChargeCardProps = {
   isCharging: boolean;
   batteryLevel: number;
+  eta: number;
 };
 
-export const ChargeCard: React.FC<ChargeCardProps> = ({ isCharging, batteryLevel }) => {
+export const ChargeCard: React.FC<ChargeCardProps> = ({ isCharging, batteryLevel, eta }) => {
+  const formattedEta = eta !== -1 ? `${eta.toFixed(0)} min` : 'N/A';
+
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Charging Status</Text>
-      <Text style={styles.status}>{isCharging ? 'Charging' : 'Not Charging'}</Text>
-      <Text style={styles.batteryLevel}>{`Battery Level: ${batteryLevel.toFixed(0)}%`}</Text>
+      <View style={styles.contentContainer}>
+        <View style={styles.batteryContainer}>
+          <AnimatedCircularProgress
+            size={120}
+            width={12}
+            fill={batteryLevel}
+            tintColor={isCharging ? theme.colors.primary : theme.colors.success}
+            backgroundColor="#3d3d3d">
+            {
+              (fill) => (
+                <Text style={styles.batteryLevelText}>
+                  {`${Math.round(fill)}%`}
+                </Text>
+              )
+            }
+          </AnimatedCircularProgress>
+        </View>
+        <View style={styles.detailsContainer}>
+          <View style={styles.detailRow}>
+            <Feather name={isCharging ? 'zap' : 'zap-off'} size={20} color={theme.colors.textSecondary} />
+            <Text style={styles.detailText}>{isCharging ? 'Charging' : 'Not Charging'}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Feather name="clock" size={20} color={theme.colors.textSecondary} />
+            <Text style={styles.detailText}>ETA: {formattedEta}</Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 };
@@ -20,25 +50,38 @@ export const ChargeCard: React.FC<ChargeCardProps> = ({ isCharging, batteryLevel
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.card,
-    borderRadius: 8,
-    padding: theme.spacing.m,
+    borderRadius: 20,
+    padding: theme.spacing.l,
     marginBottom: theme.spacing.m,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 20,
+    elevation: 5,
   },
-  title: {
-    ...theme.typography.subtitle,
-    marginBottom: theme.spacing.s,
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  status: {
+  batteryContainer: {
+    marginRight: theme.spacing.l,
+  },
+  batteryLevelText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+  },
+  detailsContainer: {
+    flex: 1,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.m,
+  },
+  detailText: {
     ...theme.typography.body,
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.s,
-  },
-  batteryLevel: {
-    ...theme.typography.body,
+    marginLeft: theme.spacing.m,
+    fontSize: 18,
   },
 });
