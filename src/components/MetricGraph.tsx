@@ -18,51 +18,52 @@ export const MetricGraph: React.FC<MetricGraphProps> = ({ title, data }) => {
           datasets: [
             {
               data: data.length > 0 ? data : [0],
+              color: (opacity = 1) => `rgba(44, 217, 197, ${opacity})`, // Line color
+              strokeWidth: 3,
             },
           ],
         }}
-        width={Dimensions.get('window').width - theme.spacing.m * 2 - theme.spacing.s * 2}
+        width={Dimensions.get('window').width - theme.spacing.m * 4}
         height={220}
         chartConfig={chartConfig}
         bezier
         style={styles.chart}
+        withDots={false}
+        withInnerLines={false}
+        withOuterLines={false}
       />
     </View>
   );
 };
 
 const chartConfig = {
-  backgroundColor: theme.colors.primary,
-  backgroundGradientFrom: theme.colors.primary,
-  backgroundGradientTo: '#1E90FF',
-  decimalPlaces: 2,
+  backgroundGradientFrom: theme.colors.card,
+  backgroundGradientTo: theme.colors.card,
+  decimalPlaces: 1,
   color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
   labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-  style: {
-    borderRadius: 16,
-  },
-  propsForDots: {
-    r: '6',
-    strokeWidth: '2',
-    stroke: '#ffa726',
+  propsForBackgroundLines: {
+    strokeDasharray: '', // solid background lines
+    stroke: theme.colors.border,
   },
 };
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.card,
-    borderRadius: 8,
+    borderRadius: 20,
     padding: theme.spacing.m,
     marginBottom: theme.spacing.m,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 10,
+    elevation: 4,
   },
   title: {
     ...theme.typography.subtitle,
-    marginBottom: theme.spacing.s,
+    marginBottom: theme.spacing.m,
+    textAlign: 'center',
   },
   chart: {
     borderRadius: 16,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar } from 'react-native';
 import { theme } from '../theme';
 import { ChargeCard } from '../components/ChargeCard';
 import { MetricCard } from '../components/MetricCard';
@@ -7,36 +7,50 @@ import { MetricGraph } from '../components/MetricGraph';
 import { NativeModules, NativeEventEmitter } from 'react-native';
 
 const { ChargerStats } = NativeModules;
+const eventEmitter = new NativeEventEmitter(ChargerStats);
+
+interface BatteryStats {
+  isCharging: boolean;
+  batteryLevel: number;
+  eta: string;
+  power: number;
+  temperature: number;
+}
 
 export const DashboardScreen = () => {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState<BatteryStats | null>(null);
   const [tempHistory, setTempHistory] = useState<number[]>([]);
   const [powerHistory, setPowerHistory] = useState<number[]>([]);
 
   useEffect(() => {
-    const eventEmitter = new NativeEventEmitter(ChargerStats);
-    const eventListener = eventEmitter.addListener('onBatteryStatsChanged', (event) => {
-      setStats(event);
-      setTempHistory((prev) => [...prev, event.temperature].slice(-30));
-      setPowerHistory((prev) => [...prev, event.power].slice(-30));
+    ChargerStats.startBatteryMonitoring();
+
+    const eventListener = eventEmitter.addListener('onBatteryStatsChanged', (event: { data: BatteryStats }) => {
+      setStats(event.data);
+      setTempHistory((prev) => [...prev, Number(event.data.temperature)].slice(-30));
+      setPowerHistory((prev) => [...prev, event.data.power].slice(-30));
     });
 
-    ChargerStats.startListening();
-
     return () => {
+      ChargerStats.stopBatteryMonitoring();
       eventListener.remove();
     };
   }, []);
 
   return (
     <ScrollView style={styles.container}>
+      <StatusBar barStyle="light-content" />
       <Text style={styles.title}>ChargeGuard</Text>
       {stats && (
         <>
-          <ChargeCard isCharging={stats.isCharging} batteryLevel={stats.batteryLevel} />
+          <ChargeCard
+            isCharging={stats.isCharging}
+            batteryLevel={stats.batteryLevel}
+            eta={Number(stats.eta)}
+          />
           <View style={styles.metricsContainer}>
-            <MetricCard title="Power" value={`${stats.power.toFixed(2)} mW`} />
-            <MetricCard title="Temperature" value={`${stats.temperature.toFixed(1)} °C`} />
+            <MetricCard icon="zap" title="Power" value={`${stats.power.toFixed(2)} mW`} />
+            <MetricCard icon="thermometer" title="Temperature" value={`${stats.temperature.toFixed(1)} °C`} />
           </View>
           <MetricGraph title="Temperature (°C) - Last 5 Mins" data={tempHistory} />
           <MetricGraph title="Power (mW) - Last 5 Mins" data={powerHistory} />
@@ -54,8 +68,9 @@ const styles = StyleSheet.create({
   },
   title: {
     ...theme.typography.title,
-    marginBottom: theme.spacing.m,
+    marginBottom: theme.spacing.l,
     textAlign: 'center',
+    color: theme.colors.text,
   },
   metricsContainer: {
     flexDirection: 'row',
