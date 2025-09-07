@@ -25,15 +25,25 @@ export const DashboardScreen = () => {
   useEffect(() => {
     ChargerStats.startBatteryMonitoring();
 
-    const eventListener = eventEmitter.addListener('onBatteryStatsChanged', (event: { data: BatteryStats }) => {
+    // Listen for both battery stats and charger status events
+    const statsListener = eventEmitter.addListener('onBatteryStatsChanged', (event: { data: BatteryStats }) => {
       setStats(event.data);
       setTempHistory((prev) => [...prev, Number(event.data.temperature)].slice(-30));
       setPowerHistory((prev) => [...prev, event.data.power].slice(-30));
     });
 
+    const chargerListener = eventEmitter.addListener('onChargerStatusChanged', (event: { data: BatteryStats; showPopup: boolean }) => {
+      if (event.data.isCharging) {
+        setStats(event.data);
+        setTempHistory((prev) => [...prev, Number(event.data.temperature)].slice(-30));
+        setPowerHistory((prev) => [...prev, event.data.power].slice(-30));
+      }
+    });
+
     return () => {
       ChargerStats.stopBatteryMonitoring();
-      eventListener.remove();
+      statsListener.remove();
+      chargerListener.remove();
     };
   }, []);
 

@@ -1,0 +1,23 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "perplexity-key",
+      "description": "Perplexity API Key",
+      "password": true
+    }
+  ],
+  "servers": {
+    "Perplexity": {
+      "type": "stdio",
+      "command": "npx",
+          "args": [
+            "-y",
+            "server-perplexity-ask"
+          ],
+      "env": {
+        "PERPLEXITY_API_KEY": "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"
+      }
+    }
+  }
+}

@@ -24,76 +24,9 @@ const { ChargerStats } = NativeModules;
 const eventEmitter = new NativeEventEmitter(ChargerStats);
 
 const ChargeCardPopup: React.FC = () => {
-  const [visible, setVisible] = useState(false);
-  const [chargeData, setChargeData] = useState<ChargeData | null>(null);
+  // ...existing code...
 
-  const slideAnim = useRef(new Animated.Value(400)).current;
-  const progressAnim = useRef(new Animated.Value(1)).current;
-
-  const runCloseAnimation = useCallback(() => {
-    Animated.timing(slideAnim, {
-      toValue: 400,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setVisible(false);
-      setChargeData(null);
-    });
-  }, [slideAnim]);
-
-  useEffect(() => {
-    const listener = eventEmitter.addListener(
-      'onChargerStatusChanged',
-      (event: { data: ChargeData; showPopup: boolean }) => {
-        if (event.showPopup) {
-          setChargeData(event.data);
-          setVisible(true);
-        } else {
-          runCloseAnimation();
-        }
-      },
-    );
-
-    return () => {
-      listener.remove();
-    };
-  }, [runCloseAnimation]);
-
-  useEffect(() => {
-    if (visible) {
-      // Reset progress bar
-      progressAnim.setValue(1);
-      // Slide in animation
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 400,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-      // Progress bar animation
-      Animated.timing(progressAnim, {
-        toValue: 0,
-        duration: 5000, // Same as the auto-hide timer
-        easing: Easing.linear,
-        useNativeDriver: false, // Needs to be false for width animation
-      }).start(runCloseAnimation); // Close when progress finishes
-    } else {
-      // If closed externally (e.g., by unplugging), just slide out
-      runCloseAnimation();
-    }
-
-    return () => {
-      slideAnim.stopAnimation();
-      progressAnim.stopAnimation();
-    };
-  }, [visible, slideAnim, progressAnim, runCloseAnimation]);
-
-  const handleManualClose = () => {
-    slideAnim.stopAnimation();
-    progressAnim.stopAnimation();
-    runCloseAnimation();
-  };
-
+  // Helper to get charge status info for icon, color, title, description
   const getStatusInfo = useCallback((s: number) => {
     if (s >= 80)
       return {
@@ -115,6 +48,29 @@ const ChargeCardPopup: React.FC = () => {
       title: 'Poor Charge',
       description: 'This may degrade battery health.',
     };
+  }, []);
+
+  // Manual close handler for popup
+  const handleManualClose = useCallback(() => {
+    slideAnim.stopAnimation();
+    progressAnim.stopAnimation();
+    runCloseAnimation();
+  }, [slideAnim, progressAnim, runCloseAnimation]);
+  const [visible, setVisible] = useState(false);
+  const [chargeData, setChargeData] = useState<ChargeData | null>(null);
+
+  const slideAnim = useRef(new Animated.Value(400)).current;
+  const progressAnim = useRef(new Animated.Value(1)).current;
+
+  const runCloseAnimation = useCallback(() => {
+    Animated.timing(slideAnim, {
+      toValue: 400,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setVisible(false);
+      setChargeData(null);
+    });
   }, []);
 
   if (!visible || !chargeData) {
@@ -265,8 +221,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailIcon: {
-    opacity: 0.8,
+    opacity: 0.9,
     marginRight: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   detailText: {
     ...theme.typography.body,
