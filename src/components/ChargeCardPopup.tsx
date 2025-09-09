@@ -9,6 +9,7 @@ import {
   NativeModules,
   NativeEventEmitter,
 } from 'react-native';
+// @ts-ignore - runtime import for vector icons
 import Feather from 'react-native-vector-icons/Feather';
 import { theme } from '../theme';
 
@@ -25,6 +26,23 @@ const eventEmitter = new NativeEventEmitter(ChargerStats);
 
 const ChargeCardPopup: React.FC = () => {
   // ...existing code...
+
+  const [visible, setVisible] = useState(false);
+  const [chargeData, setChargeData] = useState<ChargeData | null>(null);
+
+  const slideAnim = useRef(new Animated.Value(400)).current;
+  const progressAnim = useRef(new Animated.Value(1)).current;
+
+  const runCloseAnimation = useCallback(() => {
+    Animated.timing(slideAnim, {
+      toValue: 400,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setVisible(false);
+      setChargeData(null);
+    });
+  }, [slideAnim]);
 
   // Helper to get charge status info for icon, color, title, description
   const getStatusInfo = useCallback((s: number) => {
@@ -56,22 +74,6 @@ const ChargeCardPopup: React.FC = () => {
     progressAnim.stopAnimation();
     runCloseAnimation();
   }, [slideAnim, progressAnim, runCloseAnimation]);
-  const [visible, setVisible] = useState(false);
-  const [chargeData, setChargeData] = useState<ChargeData | null>(null);
-
-  const slideAnim = useRef(new Animated.Value(400)).current;
-  const progressAnim = useRef(new Animated.Value(1)).current;
-
-  const runCloseAnimation = useCallback(() => {
-    Animated.timing(slideAnim, {
-      toValue: 400,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      setVisible(false);
-      setChargeData(null);
-    });
-  }, []);
 
   if (!visible || !chargeData) {
     return null;
@@ -157,8 +159,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    paddingBottom: 32, // Safe area padding
+  padding: 16,
+  paddingBottom: 16, // reduced so tab bar can be tappable
   },
   card: {
     borderRadius: 24,

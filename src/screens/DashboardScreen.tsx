@@ -17,7 +17,7 @@ interface BatteryStats {
   temperature: number;
 }
 
-export const DashboardScreen = () => {
+const DashboardScreen = () => {
   const [stats, setStats] = useState<BatteryStats | null>(null);
   const [tempHistory, setTempHistory] = useState<number[]>([]);
   const [powerHistory, setPowerHistory] = useState<number[]>([]);
@@ -88,3 +88,5 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.m,
   },
 });
+
+export default DashboardScreen;

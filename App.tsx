@@ -2,15 +2,22 @@
 
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
-import { DashboardScreen } from './src/screens/DashboardScreen';
-import ChargeCardPopup from './src/components/ChargeCardPopup';
+import { enableScreens } from 'react-native-screens';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BatteryProvider } from './src/context/BatteryContext';
+import MainNavigation from './src/navigation/MainNavigation';
+
+enableScreens();
 
 const App = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <DashboardScreen />
-      <ChargeCardPopup />
-    </SafeAreaView>
+    <GestureHandlerRootView style={styles.container}>
+      <SafeAreaView style={styles.container}>
+        <BatteryProvider>
+          <MainNavigation />
+        </BatteryProvider>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 };
 
