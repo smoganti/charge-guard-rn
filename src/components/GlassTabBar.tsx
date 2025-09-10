@@ -29,7 +29,7 @@ const GlassTabBar: React.FC<GlassTabBarProps> = ({
 }) => {
   return (
     <LinearGradient
-      colors={['rgba(30, 58, 95, 0.9)', 'rgba(44, 78, 115, 0.85)']}
+      colors={['rgba(24, 28, 36, 0.55)', 'rgba(24, 28, 36, 0.35)']}
       style={styles.container}>
       <View style={styles.blur}>
         {tabs.map((tab, index) => {
@@ -84,14 +84,16 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: 'hidden',
-    elevation: 8,
-    shadowColor: '#000',
+    elevation: 12,
+    shadowColor: '#38bdf8',
     shadowOffset: {
       width: 0,
-      height: -4,
+      height: -8,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   blur: {
     flexDirection: 'row',
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(24, 28, 36, 0.25)',
   },
   tab: {
     flex: 1,

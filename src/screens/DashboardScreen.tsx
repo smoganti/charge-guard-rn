@@ -5,6 +5,7 @@ import { ChargeCard } from '../components/ChargeCard';
 import { MetricCard } from '../components/MetricCard';
 import { MetricGraph } from '../components/MetricGraph';
 import { NativeModules, NativeEventEmitter } from 'react-native';
+import ScreenBackground from '../components/ScreenBackground'; // Import the component
 
 const { ChargerStats } = NativeModules;
 const eventEmitter = new NativeEventEmitter(ChargerStats);
@@ -25,7 +26,6 @@ const DashboardScreen = () => {
   useEffect(() => {
     ChargerStats.startBatteryMonitoring();
 
-    // Listen for both battery stats and charger status events
     const statsListener = eventEmitter.addListener('onBatteryStatsChanged', (event: { data: BatteryStats }) => {
       setStats(event.data);
       setTempHistory((prev) => [...prev, Number(event.data.temperature)].slice(-30));
@@ -48,32 +48,33 @@ const DashboardScreen = () => {
   }, []);
 
   return (
-    <ScrollView style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <Text style={styles.title}>ChargeGuard</Text>
-      {stats && (
-        <>
-          <ChargeCard
-            isCharging={stats.isCharging}
-            batteryLevel={stats.batteryLevel}
-            eta={Number(stats.eta)}
-          />
-          <View style={styles.metricsContainer}>
-            <MetricCard icon="zap" title="Power" value={`${stats.power.toFixed(2)} mW`} />
-            <MetricCard icon="thermometer" title="Temperature" value={`${stats.temperature.toFixed(1)} °C`} />
-          </View>
-          <MetricGraph title="Temperature (°C) - Last 5 Mins" data={tempHistory} />
-          <MetricGraph title="Power (mW) - Last 5 Mins" data={powerHistory} />
-        </>
-      )}
-    </ScrollView>
+    <ScreenBackground>
+      <ScrollView contentContainerStyle={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <Text style={styles.title}>ChargeGuard</Text>
+        {stats && (
+          <>
+            <ChargeCard
+              isCharging={stats.isCharging}
+              batteryLevel={stats.batteryLevel}
+              eta={Number(stats.eta)}
+            />
+            <View style={styles.metricsContainer}>
+              <MetricCard icon="zap" title="Power" value={`${stats.power.toFixed(2)} mW`} />
+              <MetricCard icon="thermometer" title="Temperature" value={`${stats.temperature.toFixed(1)} °C`} />
+            </View>
+            <MetricGraph title="Temperature (°C) - Last 5 Mins" data={tempHistory} />
+            <MetricGraph title="Power (mW) - Last 5 Mins" data={powerHistory} />
+          </>
+        )}
+      </ScrollView>
+    </ScreenBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  // The ScrollView's content container gets the padding, not a background.
   container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
     padding: theme.spacing.m,
   },
   title: {

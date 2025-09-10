@@ -12,7 +12,7 @@ type MetricCardProps = {
 export const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon }) => {
   return (
     <View style={styles.card}>
-      <View style={styles.iconContainer}>
+    <View style={styles.contentPadding}>
         <Feather name={icon} size={24} color={theme.colors.primary} />
       </View>
       <Text style={styles.title}>{title}</Text>
@@ -23,32 +23,33 @@ export const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon }) =>
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: 'rgba(24, 28, 36, 0.55)', // glossy, more transparent
     borderRadius: 16,
-    padding: theme.spacing.m,
     marginBottom: theme.spacing.m,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowColor: '#38bdf8',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
     flex: 1,
     marginHorizontal: theme.spacing.s / 2,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  iconContainer: {
-    marginBottom: theme.spacing.m,
+  contentPadding: {
+    padding: theme.spacing.m,
+    alignItems: 'center',
   },
   title: {
-    ...theme.typography.subtitle,
     fontSize: 16,
-    marginBottom: theme.spacing.s,
-    textAlign: 'center',
+    color: '#fff',
+    marginBottom: 2,
   },
   value: {
-    ...theme.typography.body,
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: theme.colors.text,
+    color: '#38bdf8',
+    marginBottom: 2,
   },
 });
