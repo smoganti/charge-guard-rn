@@ -23,8 +23,9 @@ const App = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    position: 'relative', // Keep this for the absolute positioning of the popup
+  flex: 1,
+  position: 'relative', // Keep this for the absolute positioning of the popup
+  backgroundColor: '#000', // Set background to full black to match theme
   },
 });
 

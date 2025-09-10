@@ -1,14 +1,15 @@
 import React from 'react';
 import {View, Text, StyleSheet, ScrollView, ViewStyle} from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import {useBattery} from '../context/BatteryContext';
 import GlassCard from '../components/GlassCard';
 import BatteryCircle from '../components/BatteryCircle';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import ScreenBackground from '../components/ScreenBackground'; // Import the new component
 
 const HealthScreen = () => {
   const {batteryData} = useBattery();
 
+  // ... (keep all your existing interfaces and functions like getHealthStatus, etc.)
   interface HealthStatus {
     text: string;
     color: string;
@@ -62,16 +63,16 @@ const HealthScreen = () => {
     low: {backgroundColor: 'rgba(59, 130, 246, 0.2)'},
   };
 
+
   return (
-    <LinearGradient colors={['#1e3a5f', '#2c4e73']} style={styles.container}>
+    <ScreenBackground>
       <ScrollView
-        style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <Text style={styles.screenTitle}>Battery Health</Text>
 
         {/* Health Overview */}
-        <GlassCard style={styles.healthCard}>
+        <GlassCard style={styles.card}>
           <View style={styles.healthHeader}>
             <BatteryCircle
               percentage={batteryData.health}
@@ -91,7 +92,7 @@ const HealthScreen = () => {
         </GlassCard>
 
         {/* Health Metrics */}
-        <GlassCard style={styles.metricsCard}>
+        <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>Health Metrics</Text>
           <View style={styles.metricsGrid}>
             <View style={styles.metric}>
@@ -122,7 +123,7 @@ const HealthScreen = () => {
         </GlassCard>
 
         {/* Battery Tips */}
-        <GlassCard style={styles.tipsCard}>
+        <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>Optimization Tips</Text>
           {recommendations.map(tip => (
             <View key={tip.id} style={styles.tipItem}>
@@ -144,7 +145,7 @@ const HealthScreen = () => {
         </GlassCard>
 
         {/* Health History */}
-        <GlassCard style={styles.historyCard}>
+        <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>Health Trend</Text>
           <View style={styles.trendContainer}>
             <Text style={styles.trendText}>
@@ -164,18 +165,12 @@ const HealthScreen = () => {
           </View>
         </GlassCard>
       </ScrollView>
-    </LinearGradient>
+    </ScreenBackground>
   );
 };
 
-// Paste the existing styles from your file below this line
+// All the styles remain the same, except we no longer need the 'container' style.
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
   content: {
     paddingHorizontal: 20,
     paddingTop: 20,
@@ -188,8 +183,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  healthCard: {
-    padding: 20,
+  card: {
     marginBottom: 20,
   },
   healthHeader: {
@@ -198,7 +192,6 @@ const styles = StyleSheet.create({
   },
   healthInfo: {
     marginLeft: 20,
-    flex: 1,
   },
   healthPercentage: {
     color: '#fff',
@@ -207,17 +200,13 @@ const styles = StyleSheet.create({
   },
   healthStatus: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     marginTop: 4,
   },
   healthSubtext: {
     color: '#b0b0b0',
     fontSize: 14,
     marginTop: 4,
-  },
-  metricsCard: {
-    padding: 20,
-    marginBottom: 20,
   },
   cardTitle: {
     color: '#fff',
@@ -250,10 +239,6 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 10,
     marginTop: 2,
-  },
-  tipsCard: {
-    padding: 20,
-    marginBottom: 20,
   },
   tipItem: {
     flexDirection: 'row',
@@ -303,10 +288,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: '600',
-  },
-  historyCard: {
-    padding: 20,
-    marginBottom: 20,
   },
   trendContainer: {
     alignItems: 'center',
