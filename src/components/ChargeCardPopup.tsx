@@ -9,6 +9,7 @@ import {
   NativeModules,
   NativeEventEmitter,
 } from 'react-native';
+// @ts-ignore - runtime import for vector icons
 import Feather from 'react-native-vector-icons/Feather';
 import { theme } from '../theme';
 
@@ -24,6 +25,8 @@ const { ChargerStats } = NativeModules;
 const eventEmitter = new NativeEventEmitter(ChargerStats);
 
 const ChargeCardPopup: React.FC = () => {
+  // ...existing code...
+
   const [visible, setVisible] = useState(false);
   const [chargeData, setChargeData] = useState<ChargeData | null>(null);
 
@@ -41,59 +44,7 @@ const ChargeCardPopup: React.FC = () => {
     });
   }, [slideAnim]);
 
-  useEffect(() => {
-    const listener = eventEmitter.addListener(
-      'onChargerStatusChanged',
-      (event: { data: ChargeData; showPopup: boolean }) => {
-        if (event.showPopup) {
-          setChargeData(event.data);
-          setVisible(true);
-        } else {
-          runCloseAnimation();
-        }
-      },
-    );
-
-    return () => {
-      listener.remove();
-    };
-  }, [runCloseAnimation]);
-
-  useEffect(() => {
-    if (visible) {
-      // Reset progress bar
-      progressAnim.setValue(1);
-      // Slide in animation
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 400,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-      // Progress bar animation
-      Animated.timing(progressAnim, {
-        toValue: 0,
-        duration: 5000, // Same as the auto-hide timer
-        easing: Easing.linear,
-        useNativeDriver: false, // Needs to be false for width animation
-      }).start(runCloseAnimation); // Close when progress finishes
-    } else {
-      // If closed externally (e.g., by unplugging), just slide out
-      runCloseAnimation();
-    }
-
-    return () => {
-      slideAnim.stopAnimation();
-      progressAnim.stopAnimation();
-    };
-  }, [visible, slideAnim, progressAnim, runCloseAnimation]);
-
-  const handleManualClose = () => {
-    slideAnim.stopAnimation();
-    progressAnim.stopAnimation();
-    runCloseAnimation();
-  };
-
+  // Helper to get charge status info for icon, color, title, description
   const getStatusInfo = useCallback((s: number) => {
     if (s >= 80)
       return {
@@ -116,6 +67,13 @@ const ChargeCardPopup: React.FC = () => {
       description: 'This may degrade battery health.',
     };
   }, []);
+
+  // Manual close handler for popup
+  const handleManualClose = useCallback(() => {
+    slideAnim.stopAnimation();
+    progressAnim.stopAnimation();
+    runCloseAnimation();
+  }, [slideAnim, progressAnim, runCloseAnimation]);
 
   if (!visible || !chargeData) {
     return null;
@@ -201,8 +159,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    paddingBottom: 32, // Safe area padding
+  padding: 16,
+  paddingBottom: 16, // reduced so tab bar can be tappable
   },
   card: {
     borderRadius: 24,
@@ -265,8 +223,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailIcon: {
-    opacity: 0.8,
+    opacity: 0.9,
     marginRight: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   detailText: {
     ...theme.typography.body,
