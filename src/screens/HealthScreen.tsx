@@ -9,6 +9,15 @@ import ScreenBackground from '../components/ScreenBackground'; // Import the new
 const HealthScreen = () => {
   const {batteryData} = useBattery();
 
+  const formatDuration = (totalMinutes: number): string => {
+    if (!totalMinutes || totalMinutes <= 0) {
+      return 'N/A';
+    }
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round(totalMinutes % 60);
+    return `${hours}h ${minutes}m`;
+  };
+
   // ... (keep all your existing interfaces and functions like getHealthStatus, etc.)
   interface HealthStatus {
     text: string;
@@ -32,6 +41,7 @@ const HealthScreen = () => {
   };
 
   const healthStatus = getHealthStatus(batteryData.health);
+  const healthScore = (batteryData.health / 10).toFixed(1);
 
   const recommendations: Recommendation[] = [
     {
@@ -69,24 +79,44 @@ const HealthScreen = () => {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
-        <Text style={styles.screenTitle}>Battery Health</Text>
+        <Text style={styles.screenTitle}>Know Your Battery</Text>
 
         {/* Health Overview */}
         <GlassCard style={styles.card}>
-          <View style={styles.healthHeader}>
+          <Text style={[styles.cardTitle, {textAlign: 'center'}]}>
+            Battery Health
+          </Text>
+          <View style={styles.meterContainer}>
             <BatteryCircle
               percentage={batteryData.health}
-              size={100}
-              strokeWidth={8}
+              size={120}
+              strokeWidth={10}
               color={healthStatus.color}
-              showPercentage={false}
+              showPercentage={false} // We render our custom score inside
             />
-            <View style={styles.healthInfo}>
-              <Text style={styles.healthPercentage}>{batteryData.health}%</Text>
-              <Text style={[styles.healthStatus, {color: healthStatus.color}]}>
-                {healthStatus.text}
+            <View style={styles.scoreContainer}>
+              <Text style={styles.healthScore}>{healthScore}</Text>
+              <Text style={styles.healthScoreTotal}>/ 10</Text>
+            </View>
+          </View>
+          <Text style={[styles.healthStatus, {color: healthStatus.color}]}>
+            {healthStatus.text}
+          </Text>
+          <View style={styles.divider} />
+          <View style={styles.durationContainer}>
+            <View style={styles.durationItem}>
+              <Icon name="hourglass-bottom" size={20} color="#b0b0b0" />
+              <Text style={styles.durationValue}>
+                {formatDuration(batteryData.timeRemainingNormal)}
               </Text>
-              <Text style={styles.healthSubtext}>Battery Health</Text>
+              <Text style={styles.durationLabel}>Normal Use</Text>
+            </View>
+            <View style={styles.durationItem}>
+              <Icon name="battery-saver" size={20} color="#b0b0b0" />
+              <Text style={styles.durationValue}>
+                {formatDuration(batteryData.timeRemainingPowerSave)}
+              </Text>
+              <Text style={styles.durationLabel}>Power Save</Text>
             </View>
           </View>
         </GlassCard>
@@ -184,28 +214,57 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    marginBottom: 0,
+    marginBottom: 20,
   },
-  healthHeader: {
-    flexDirection: 'row',
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 16,
+  },
+  meterContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 16,
+    position: 'relative',
   },
-  healthInfo: {
-    marginLeft: 20,
+  scoreContainer: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
-  healthPercentage: {
+  healthScore: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
+  },
+  healthScoreTotal: {
+    color: '#b0b0b0',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 4,
+    paddingBottom: 6,
   },
   healthStatus: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 4,
+    textAlign: 'center',
   },
-  healthSubtext: {
+  durationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  durationItem: {
+    alignItems: 'center',
+  },
+  durationValue: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  durationLabel: {
     color: '#b0b0b0',
-    fontSize: 14,
+    fontSize: 12,
     marginTop: 4,
   },
   cardTitle: {
