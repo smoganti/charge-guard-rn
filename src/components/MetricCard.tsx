@@ -30,7 +30,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
-    elevation: 12,
     flex: 1,
     marginHorizontal: theme.spacing.s / 2,
     alignItems: 'center',

@@ -24,7 +24,7 @@ export const ChargeCard: React.FC<ChargeCardProps> = ({ isCharging, batteryLevel
             tintColor={isCharging ? theme.colors.primary : theme.colors.success}
             backgroundColor="#3d3d3d">
             {
-              (fill) => (
+              (fill: number) => (
                 <Text style={styles.batteryLevelText}>
                   {`${Math.round(fill)}%`}
                 </Text>
@@ -73,14 +73,15 @@ const styles = StyleSheet.create({
   },
   detailsContainer: {
     flex: 1,
+    justifyContent: 'space-evenly',
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.m,
   },
   detailText: {
     ...theme.typography.body,
+    color: theme.colors.text,
     marginLeft: theme.spacing.m,
     fontSize: 18,
   },

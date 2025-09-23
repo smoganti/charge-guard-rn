@@ -165,7 +165,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     padding: 24,
-    elevation: 12,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: -5},
     shadowOpacity: 0.15,
