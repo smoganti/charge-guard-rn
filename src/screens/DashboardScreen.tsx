@@ -13,7 +13,7 @@ const eventEmitter = new NativeEventEmitter(ChargerStats);
 interface BatteryStats {
   isCharging: boolean;
   batteryLevel: number;
-  eta: string;
+  eta: number;
   power: number;
   temperature: number;
 }
@@ -26,23 +26,14 @@ const DashboardScreen = () => {
   useEffect(() => {
     ChargerStats.startBatteryMonitoring();
 
-    const statsListener = eventEmitter.addListener('onBatteryStatsChanged', (event: { data: BatteryStats }) => {
+    const chargerListener = eventEmitter.addListener('onChargerStatusChanged', (event: { data: BatteryStats; showPopup: boolean }) => {
       setStats(event.data);
       setTempHistory((prev) => [...prev, Number(event.data.temperature)].slice(-30));
       setPowerHistory((prev) => [...prev, event.data.power].slice(-30));
     });
 
-    const chargerListener = eventEmitter.addListener('onChargerStatusChanged', (event: { data: BatteryStats; showPopup: boolean }) => {
-      if (event.data.isCharging) {
-        setStats(event.data);
-        setTempHistory((prev) => [...prev, Number(event.data.temperature)].slice(-30));
-        setPowerHistory((prev) => [...prev, event.data.power].slice(-30));
-      }
-    });
-
     return () => {
       ChargerStats.stopBatteryMonitoring();
-      statsListener.remove();
       chargerListener.remove();
     };
   }, []);
@@ -57,14 +48,14 @@ const DashboardScreen = () => {
             <ChargeCard
               isCharging={stats.isCharging}
               batteryLevel={stats.batteryLevel}
-              eta={Number(stats.eta)}
+              eta={stats.eta}
             />
             <View style={styles.metricsContainer}>
-              <MetricCard icon="zap" title="Power" value={`${stats.power.toFixed(2)} mW`} />
+              <MetricCard icon="zap" title="Power" value={`${stats.power.toFixed(2)} W`} />
               <MetricCard icon="thermometer" title="Temperature" value={`${stats.temperature.toFixed(1)} °C`} />
             </View>
             <MetricGraph title="Temperature (°C) - Last 5 Mins" data={tempHistory} />
-            <MetricGraph title="Power (mW) - Last 5 Mins" data={powerHistory} />
+            <MetricGraph title="Power (W) - Last 5 Mins" data={powerHistory} />
           </>
         )}
       </ScrollView>

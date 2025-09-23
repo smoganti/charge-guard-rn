@@ -9,17 +9,15 @@ const GlassCard = ({children, style}) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(24, 28, 36, 0.55)', // glossy, more transparent
+    backgroundColor: 'rgba(24, 28, 36, 0.45)', // glossy, more transparent
     borderRadius: 20,
     marginVertical: 10,
     shadowColor: '#38bdf8',
     shadowOffset: {width: 0, height: 8},
     shadowOpacity: 0.5,
     shadowRadius: 16,
-    elevation: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
-    // The padding from the inner View has been moved here.
     padding: 20,
   },
   // The contentPadding style is no longer needed.

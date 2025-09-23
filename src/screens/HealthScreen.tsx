@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   healthHeader: {
     flexDirection: 'row',
