@@ -1,10 +1,100 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# ChargeGuardRN
+
+**A smart battery monitoring and health management application built with React Native.**
+
+ChargeGuardRN is a mobile application designed to provide users with detailed insights into their device's battery status, health, and charging patterns. It leverages a custom native module to fetch real-time data, presenting it in a clean, intuitive, and visually appealing interface.
+
+---
+
+## ✨ Core Features
+
+-   **Real-time Dashboard**: Monitor live charging status, power (in Watts), device temperature, and estimated time to full charge (ETA).
+-   **Dynamic Graphs**: Visualize temperature and power history over the last 5 minutes to identify trends.
+-   **Comprehensive Health Overview**: Get a clear battery health score (out of 10), see estimated battery duration for normal and power-saving modes, and view key metrics like charge cycles and design capacity.
+-   **Optimization Tips**: Receive actionable recommendations to improve charging habits and extend battery lifespan.
+-   **Unified Dark Theme**: A sleek, modern "glassmorphism" design is used across all screens for a consistent user experience.
+-   **Native Integration**: A custom Android/iOS native module (`ChargerStats`) provides accurate, low-level battery information directly from the operating system.
+
+## 🛠️ Technology Stack
+
+-   **Framework**: React Native
+-   **Language**: TypeScript
+-   **Navigation**: React Navigation
+-   **Styling**: React Native StyleSheet with a custom theme object.
+-   **UI Components**: Custom-built components including `GlassCard`, `BatteryCircle`, and `MetricGraph`.
+-   **Native Modules**: Custom native module for Android & iOS to access deep battery stats.
+
+## 🏛️ Architecture and Data Flow
+
+The application follows a component-based architecture with a clear separation of concerns between screens, components, and services (like Context and Native Modules).
+
+### Data Flow Diagram
+
+Data originates from the native device hardware, is processed by our custom `ChargerStats` module, and flows through the React Native bridge to the UI components.
+
+```mermaid
+graph TD
+    subgraph Native Layer
+        A[Device Hardware] --> B{ChargerStats Native Module};
+    end
+
+    subgraph React Native Bridge
+        B -- Emits Events --> C[NativeEventEmitter];
+    end
+
+    subgraph React Native App
+        C --> D[DashboardScreen];
+        C --> E[BatteryContext];
+
+        D --> D1[ChargeCard];
+        D --> D2[MetricCard];
+        D --> D3[MetricGraph];
+
+        E --> F[HealthScreen];
+        F --> F1[BatteryCircle];
+        F --> F2[Health Metrics];
+    end
+
+    style A fill:#333,stroke:#fff,stroke-width:2px
+    style B fill:#555,stroke:#fff,stroke-width:2px
+    style C fill:#282c34,stroke:#61dafb,stroke-width:2px
+    style D fill:#282c34,stroke:#61dafb,stroke-width:2px
+    style E fill:#282c34,stroke:#61dafb,stroke-width:2px
+```
+
+### Navigation Flow
+
+The app uses a bottom tab navigator as its primary navigation structure.
+
+```mermaid
+graph TD
+    AppStart(App Start) --> Nav[MainNavigation - Tab Navigator];
+    Nav --> Tab1[Dashboard Screen];
+    Nav --> Tab2[Health Screen];
+    Nav --> Tab3[Settings Screen];
+
+    style AppStart fill:#10b981,stroke:#fff,stroke-width:2px
+```
+
+## 📁 Project Structure
+
+The project source code is organized into logical directories:
+
+```
+src
+├── components/    # Reusable UI components (GlassCard, ChargeCard, etc.)
+├── context/       # React Context providers (BatteryContext)
+├── navigation/    # Navigation logic and stack/tab definitions
+├── screens/       # Top-level screen components (Dashboard, Health, Settings)
+├── theme/         # Global theme settings (colors, typography, spacing)
+└── App.tsx        # Root component of the application
+```
 
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
-## Step 1: Start Metro
+## Step 1: Start the Metro Server
 
 First, you will need to run **Metro**, the JavaScript build tool for React Native.
 
