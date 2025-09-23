@@ -8,6 +8,8 @@ import {
   Switch,
   TextInput,
   FlatList,
+  SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -16,6 +18,8 @@ import DeviceInfo from 'react-native-device-info';
 import { theme } from '../theme';
 import GlassCard from '../components/GlassCard';
 import ScreenBackground from '../components/ScreenBackground';
+
+const { width, height } = Dimensions.get('window');
 
 interface AppUsageData {
   name: string;
@@ -134,9 +138,9 @@ const InsightsScreen = () => {
     });
 
   const getImpactColor = (impact: number) => {
-    if (impact > 20) return theme.colors.impact.high;
-    if (impact > 10) return theme.colors.impact.medium;
-    return theme.colors.impact.low;
+    if (impact > 20) return '#FF4444';
+    if (impact > 10) return '#FFD700';
+    return '#00FF88';
   };
 
   const getImpactLabel = (impact: number) => {
@@ -158,21 +162,21 @@ const InsightsScreen = () => {
     icon: string;
     color: string;
   }) => (
-    <GlassCard style={styles.summaryCard}>
+    <View style={styles.summaryCard}>
       <View style={styles.summaryCardContent}>
-        <Icon name={icon} size={24} color={color} />
+        <Icon name={icon} size={20} color={color} />
         <Text style={styles.summaryValue}>{value}</Text>
         <Text style={styles.summaryTitle}>{title}</Text>
       </View>
-    </GlassCard>
+    </View>
   );
 
   const AppUsageCard = ({ app }: { app: AppUsageData }) => (
-    <GlassCard style={styles.appCard}>
+    <TouchableOpacity style={styles.appCard}>
       <View style={styles.appCardContent}>
         <View style={styles.appInfo}>
           <View style={styles.appIconContainer}>
-            <Icon name="android" size={32} color={theme.colors.textSecondary} />
+            <Icon name="android" size={24} color="#B3B3B3" />
           </View>
           
           <View style={styles.appDetails}>
@@ -184,12 +188,12 @@ const InsightsScreen = () => {
             </Text>
             <View style={styles.tagsRow}>
               {app.isSystemApp && (
-                <View style={[styles.tag, { backgroundColor: theme.colors.category.system }]}>
-                  <Text style={styles.tagText}>System</Text>
+                <View style={[styles.tag, { backgroundColor: '#8A2BE2' }]}>
+                  <Text style={styles.tagText}>SYS</Text>
                 </View>
               )}
               <View style={[styles.tag, { backgroundColor: getImpactColor(app.batteryImpact) }]}>
-                <Text style={styles.tagText}>{getImpactLabel(app.batteryImpact)}</Text>
+                <Text style={styles.tagText}>{getImpactLabel(app.batteryImpact).charAt(0)}</Text>
               </View>
             </View>
           </View>
@@ -197,36 +201,33 @@ const InsightsScreen = () => {
 
         <View style={styles.metricsContainer}>
           <View style={styles.metric}>
-            <Icon name="battery-charging-full" size={16} color={theme.colors.primary} />
+            <Icon name="battery-charging-full" size={14} color="#00D4FF" />
             <Text style={styles.metricValue}>{app.batteryImpact.toFixed(1)}%</Text>
-            <Text style={styles.metricLabel}>Impact</Text>
           </View>
           
           <View style={styles.metric}>
-            <Icon name="access-time" size={16} color={theme.colors.warning} />
+            <Icon name="access-time" size={14} color="#FFD700" />
             <Text style={styles.metricValue}>{formatUsageTime(app.usageTime)}</Text>
-            <Text style={styles.metricLabel}>Usage</Text>
           </View>
           
           <View style={styles.metric}>
-            <Icon name="thermostat" size={16} color={theme.colors.secondary} />
+            <Icon name="thermostat" size={14} color="#FF6B35" />
             <Text style={styles.metricValue}>{app.temperatureImpact.toFixed(1)}°C</Text>
-            <Text style={styles.metricLabel}>Temp</Text>
           </View>
         </View>
 
-        <Icon name="chevron-right" size={24} color={theme.colors.textMuted} />
+        <Icon name="settings" size={20} color="#666666" />
       </View>
-    </GlassCard>
+    </TouchableOpacity>
   );
 
   return (
     <ScreenBackground>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            <Icon name="insights" size={28} color={theme.colors.primary} />
+            <Icon name="insights" size={24} color="#00D4FF" />
             <Text style={styles.headerTitle}>App Insights</Text>
           </View>
           {summaryStats && (
@@ -237,75 +238,74 @@ const InsightsScreen = () => {
           )}
         </View>
 
-        {/* Summary Cards */}
         <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.summarySection}
-          contentContainerStyle={styles.summaryContent}
-        >
-          <SummaryCard
-            title="Total Apps"
-            value={summaryStats?.totalApps || 0}
-            icon="apps"
-            color={theme.colors.primary}
-          />
-          <SummaryCard
-            title="High Impact"
-            value={summaryStats?.highImpactApps || 0}
-            icon="warning"
-            color={theme.colors.secondary}
-          />
-          <SummaryCard
-            title="System Apps"
-            value={summaryStats?.systemApps || 0}
-            icon="system-update"
-            color={theme.colors.accent}
-          />
-        </ScrollView>
-
-        {/* Search Bar */}
-        <GlassCard style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Icon name="search" size={20} color={theme.colors.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search apps..."
-              placeholderTextColor={theme.colors.textMuted}
-            />
-          </View>
-        </GlassCard>
-
-        {/* Controls */}
-        <View style={styles.controlsSection}>
-          <View style={styles.systemAppsToggle}>
-            <Text style={styles.toggleLabel}>Show System Apps</Text>
-            <Switch
-              value={showSystemApps}
-              onValueChange={setShowSystemApps}
-              trackColor={{ false: theme.colors.surfaceVariant, true: theme.colors.primary }}
-              thumbColor={theme.colors.text}
-            />
-          </View>
-          
-          <TouchableOpacity style={styles.sortButton}>
-            <Icon name="sort" size={20} color={theme.colors.textSecondary} />
-            <Text style={styles.sortText}>Sort</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* App List */}
-        <FlatList
-          data={filteredApps}
-          renderItem={({ item }) => <AppUsageCard app={item} />}
-          keyExtractor={(item) => item.packageName}
+          style={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
-          style={styles.appList}
-          contentContainerStyle={styles.appListContent}
-        />
-      </View>
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Summary Cards */}
+          <View style={styles.summarySection}>
+            <SummaryCard
+              title="Total Apps"
+              value={summaryStats?.totalApps || 0}
+              icon="apps"
+              color="#00D4FF"
+            />
+            <SummaryCard
+              title="High Impact"
+              value={summaryStats?.highImpactApps || 0}
+              icon="warning"
+              color="#FF6B35"
+            />
+            <SummaryCard
+              title="System Apps"
+              value={summaryStats?.systemApps || 0}
+              icon="system-update"
+              color="#8A2BE2"
+            />
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Icon name="search" size={18} color="#B3B3B3" />
+              <TextInput
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search apps..."
+                placeholderTextColor="#666666"
+              />
+            </View>
+          </View>
+
+          {/* Controls */}
+          <View style={styles.controlsSection}>
+            <View style={styles.systemAppsToggle}>
+              <Text style={styles.toggleLabel}>Show System Apps</Text>
+              <Switch
+                value={showSystemApps}
+                onValueChange={setShowSystemApps}
+                trackColor={{ false: 'rgba(255, 255, 255, 0.1)', true: '#00D4FF' }}
+                thumbColor="#FFFFFF"
+                style={styles.switch}
+              />
+            </View>
+            
+            <TouchableOpacity style={styles.sortButton}>
+              <Icon name="sort" size={18} color="#B3B3B3" />
+              <Text style={styles.sortText}>Sort</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* App List */}
+          <View style={styles.appListContainer}>
+            {filteredApps.map((app) => (
+              <AppUsageCard key={app.packageName} app={app} />
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </ScreenBackground>
   );
 };
@@ -313,7 +313,6 @@ const InsightsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: theme.spacing.m,
   },
   
   // Header Styles
@@ -321,68 +320,93 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.l,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   headerTitle: {
-    ...theme.typography.h1,
-    marginLeft: theme.spacing.s,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginLeft: 8,
   },
   batteryScore: {
     alignItems: 'center',
   },
   scoreText: {
-    ...theme.typography.h2,
-    color: theme.colors.success,
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#00FF88',
   },
   scoreLabel: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
+    fontSize: 12,
+    color: '#B3B3B3',
+  },
+
+  // Scroll Container
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 100, // Space for tab bar
   },
 
   // Summary Section
   summarySection: {
-    marginBottom: theme.spacing.l,
-  },
-  summaryContent: {
-    paddingHorizontal: theme.spacing.xs,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   summaryCard: {
-    width: 100,
-    marginRight: theme.spacing.s,
+    flex: 1,
+    backgroundColor: 'rgba(24, 28, 36, 0.45)',
+    borderRadius: 16,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   summaryCardContent: {
     alignItems: 'center',
-    padding: theme.spacing.m,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
   summaryValue: {
-    ...theme.typography.h3,
-    marginTop: theme.spacing.s,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 8,
+    marginBottom: 4,
   },
   summaryTitle: {
-    ...theme.typography.caption,
+    fontSize: 11,
+    color: '#B3B3B3',
     textAlign: 'center',
-    marginTop: theme.spacing.xs,
   },
 
   // Search Section
   searchContainer: {
-    marginBottom: theme.spacing.m,
+    marginBottom: 16,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.m,
+    backgroundColor: 'rgba(24, 28, 36, 0.45)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   searchInput: {
     flex: 1,
-    ...theme.typography.body1,
-    color: theme.colors.text,
-    marginLeft: theme.spacing.s,
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginLeft: 8,
   },
 
   // Controls Section
@@ -390,45 +414,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.l,
+    marginBottom: 16,
   },
   systemAppsToggle: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   toggleLabel: {
-    ...theme.typography.body2,
-    color: theme.colors.textSecondary,
-    marginRight: theme.spacing.s,
+    fontSize: 14,
+    color: '#B3B3B3',
+    marginRight: 8,
+  },
+  switch: {
+    transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
   },
   sortButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.s,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   sortText: {
-    ...theme.typography.body2,
-    color: theme.colors.textSecondary,
-    marginLeft: theme.spacing.xs,
+    fontSize: 14,
+    color: '#B3B3B3',
+    marginLeft: 4,
   },
 
   // App List
-  appList: {
-    flex: 1,
-  },
-  appListContent: {
-    paddingBottom: theme.spacing.xxl,
+  appListContainer: {
+    gap: 8,
   },
   appCard: {
-    marginBottom: theme.spacing.s,
+    backgroundColor: 'rgba(24, 28, 36, 0.45)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   appCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.m,
+    padding: 12,
   },
 
   // App Info
@@ -438,60 +465,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   appIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surfaceVariant,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: theme.spacing.s,
+    marginRight: 12,
   },
   appDetails: {
     flex: 1,
   },
   appName: {
-    ...theme.typography.subtitle2,
-    color: theme.colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
     marginBottom: 2,
   },
   packageName: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-    marginBottom: theme.spacing.xs,
+    fontSize: 12,
+    color: '#999999',
+    marginBottom: 4,
   },
   tagsRow: {
     flexDirection: 'row',
   },
   tag: {
-    ...theme.components.tag,
-    marginRight: theme.spacing.xs,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginRight: 4,
   },
   tagText: {
-    ...theme.typography.overline,
-    fontSize: 10,
-    color: theme.colors.text,
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
 
   // Metrics
   metricsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: theme.spacing.s,
+    marginRight: 8,
   },
   metric: {
     alignItems: 'center',
-    marginHorizontal: theme.spacing.s,
+    marginHorizontal: 8,
+    minWidth: 40,
   },
   metricValue: {
-    ...theme.typography.body2,
-    color: theme.colors.text,
+    fontSize: 11,
     fontWeight: '600',
-    marginTop: 2,
-  },
-  metricLabel: {
-    ...theme.typography.overline,
-    fontSize: 10,
-    color: theme.colors.textTertiary,
+    color: '#FFFFFF',
     marginTop: 2,
   },
 });
