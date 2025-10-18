@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleSheet, View} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 interface ScreenBackgroundProps {
   children: React.ReactNode;
@@ -8,6 +9,10 @@ interface ScreenBackgroundProps {
 const ScreenBackground: React.FC<ScreenBackgroundProps> = ({children}) => {
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={['#1e3a5f', '#2c4e73']}
+        style={StyleSheet.absoluteFillObject}
+      />
       {children}
     </View>
   );
@@ -16,7 +21,6 @@ const ScreenBackground: React.FC<ScreenBackgroundProps> = ({children}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
 });
 
