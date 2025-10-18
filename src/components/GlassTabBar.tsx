@@ -1,7 +1,6 @@
 import React from 'react';
 import {View, StyleSheet, TouchableOpacity, Text} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import LinearGradient from 'react-native-linear-gradient';
 
 interface TabItem {
   key: string;
@@ -28,9 +27,7 @@ const GlassTabBar: React.FC<GlassTabBarProps> = ({
   navigation,
 }) => {
   return (
-    <LinearGradient
-      colors={['rgba(24, 28, 36, 0.55)', 'rgba(24, 28, 36, 0.35)']}
-      style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.blur}>
         {tabs.map((tab, index) => {
           const isFocused = state.index === index;
@@ -71,13 +68,14 @@ const GlassTabBar: React.FC<GlassTabBarProps> = ({
           );
         })}
       </View>
-    </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
+    backgroundColor: '#000',
     bottom: 0,
     left: 0,
     right: 0,

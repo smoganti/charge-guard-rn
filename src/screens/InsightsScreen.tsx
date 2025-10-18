@@ -12,7 +12,6 @@ import {
   Alert,
 } from 'react-native';
 import { NativeModules } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { theme } from '../theme';
 import GlassCard from '../components/GlassCard';
@@ -139,17 +138,15 @@ export const InsightsScreen = () => {
           <Text style={styles.usageTime}>{formatDuration(item.usageTime)}</Text>
         </View>
       </View>
-      <LinearGradient
-        colors={[theme.colors.primary, theme.colors.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+      <View
         style={[
           styles.powerBar,
-          { 
-            width: appStats.length > 0 
-              ? `${(item.powerUsage / Math.max(...appStats.map(stat => stat.powerUsage))) * 100}%` 
-              : '0%' 
-          }
+          {
+            width: appStats.length > 0
+              ? `${(item.powerUsage / Math.max(...appStats.map(stat => stat.powerUsage))) * 100}%`
+              : '0%',
+            backgroundColor: theme.colors.primary,
+          },
         ]}
       />
     </TouchableOpacity>
@@ -222,12 +219,12 @@ export const InsightsScreen = () => {
           <View style={styles.breakdownItem}>
             <Text style={styles.breakdownLabel}>Foreground</Text>
             <View style={styles.breakdownBar}>
-              <LinearGradient
-                colors={[theme.colors.primary, theme.colors.primaryVariant]}
+              <View
                 style={[
                   styles.breakdownFill,
                   {
                     width: `${(selectedApp.foregroundPowerUsage / selectedApp.powerUsage) * 100}%`,
+                    backgroundColor: theme.colors.primary,
                   },
                 ]}
               />
@@ -240,12 +237,12 @@ export const InsightsScreen = () => {
           <View style={styles.breakdownItem}>
             <Text style={styles.breakdownLabel}>Background</Text>
             <View style={styles.breakdownBar}>
-              <LinearGradient
-                colors={[theme.colors.secondary, theme.colors.accent1]}
+              <View
                 style={[
                   styles.breakdownFill,
                   {
                     width: `${(selectedApp.backgroundPowerUsage / selectedApp.powerUsage) * 100}%`,
+                    backgroundColor: theme.colors.secondary,
                   },
                 ]}
               />

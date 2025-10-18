@@ -43,21 +43,22 @@ const DashboardScreen = () => {
       <ScrollView contentContainerStyle={styles.container}>
         <StatusBar barStyle="light-content" />
         <Text style={styles.title}>ChargeGuard</Text>
-        {stats && (
-          <>
-            <ChargeCard
-              isCharging={stats.isCharging}
-              batteryLevel={stats.batteryLevel}
-              eta={stats.eta}
-            />
-            <View style={styles.metricsContainer}>
-              <MetricCard icon="zap" title="Power" value={`${stats.power.toFixed(2)} W`} />
-              <MetricCard icon="thermometer" title="Temperature" value={`${stats.temperature.toFixed(1)} °C`} />
-            </View>
-            <MetricGraph title="Temperature (°C) - Last 5 Mins" data={tempHistory} />
-            <MetricGraph title="Power (W) - Last 5 Mins" data={powerHistory} />
-          </>
-        )}
+          <ChargeCard
+            isCharging={stats ? stats.isCharging : false}
+            batteryLevel={stats ? stats.batteryLevel : 0}
+            eta={stats ? stats.eta : -1}
+          />
+          <View style={styles.statusRow}>
+            <Text style={[styles.statusText, {color: stats && stats.isCharging ? theme.colors.primary : theme.colors.danger}]}> 
+              {stats && stats.isCharging ? 'Charger Connected' : 'Charger Disconnected'}
+            </Text>
+          </View>
+          <View style={styles.metricsContainer}>
+            <MetricCard icon="zap" title="Power" value={stats ? `${stats.power.toFixed(2)} W` : '--'} />
+            <MetricCard icon="thermometer" title="Temperature" value={stats ? `${stats.temperature.toFixed(1)} °C` : '--'} />
+          </View>
+          <MetricGraph title="Temperature (°C) - Last 5 Mins" data={tempHistory} />
+          <MetricGraph title="Power (W) - Last 5 Mins" data={powerHistory} />
       </ScrollView>
     </ScreenBackground>
   );
@@ -75,10 +76,20 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   metricsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.m,
-  },
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing.m,
+    },
+    statusRow: {
+      alignItems: 'center',
+      marginBottom: theme.spacing.m,
+    },
+    statusText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      letterSpacing: 1,
+      marginBottom: theme.spacing.s,
+    },
 });
 
 export default DashboardScreen;
