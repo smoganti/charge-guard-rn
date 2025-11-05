@@ -110,41 +110,56 @@ export const BatteryProvider = ({children}) => {
   };
 
   const startBatteryMonitoring = () => {
-    // Real battery monitoring for Android
+    // Real battery monitoring for Android (prefer native ChargerStats module)
     getBatteryInfo();
-    
-    // Update battery info every 3 seconds
+
+    // Update battery info every 3 seconds. Only simulate when native APIs fail
     intervalRef.current = setInterval(() => {
       getBatteryInfo();
-      simulateRealtimeChanges();
     }, 3000);
   };
 
   const getBatteryInfo = async () => {
     try {
-      const batteryLevel = await DeviceInfo.getBatteryLevel();
-      const isCharging = await DeviceInfo.isBatteryCharging();
-      const powerState = await DeviceInfo.getPowerState();
+      // Prefer native ChargerStats if available (provides power/current/temperature)
+      if (NativeModules.ChargerStats && typeof NativeModules.ChargerStats.getBatteryStats === 'function') {
+        const stats = await NativeModules.ChargerStats.getBatteryStats();
+        // stats.batteryLevel is expected to be percentage (e.g., 84.0)
+        setBatteryData(prev => ({
+          ...prev,
+          percentage: Math.round(Number(stats.batteryLevel) || prev.percentage),
+          isCharging: !!stats.isCharging,
+          temperature: typeof stats.temperature === 'number' ? stats.temperature : prev.temperature,
+          voltage: typeof stats.voltage === 'number' ? stats.voltage : prev.voltage,
+          current: typeof stats.current === 'number' ? stats.current : prev.current,
+        }));
 
-      setBatteryData(prev => ({
-        ...prev,
-        percentage: Math.round(batteryLevel * 100),
-        isCharging: isCharging,
-        // Real device values when available, fallback to simulated
-        temperature: prev.temperature + (Math.random() - 0.5) * 2,
-        voltage: prev.voltage + (Math.random() - 0.5) * 0.1,
-        current: isCharging ? prev.current + (Math.random() - 0.5) * 100 : 0,
-      }));
+        setChargeData(prev => ({
+          ...prev,
+          type: stats.isCharging ? (stats.current > 1500 ? 'Fast' : 'Standard') : 'Not Charging',
+          authenticity: analyzeBatteryPattern((Number(stats.batteryLevel) || prev.percentage) / 100, !!stats.isCharging),
+          powerDelivery: typeof stats.power === 'number' ? stats.power : prev.powerDelivery,
+        }));
+      } else {
+        // Fallback to DeviceInfo for basic battery level and charging state
+        const batteryLevel = await DeviceInfo.getBatteryLevel();
+        const isCharging = await DeviceInfo.isBatteryCharging();
 
-      // Update charge analysis based on real charging state
-      setChargeData(prev => ({
-        ...prev,
-        type: isCharging ? (prev.current > 1500 ? 'Fast' : 'Standard') : 'Not Charging',
-        authenticity: analyzeBatteryPattern(batteryLevel, isCharging),
-      }));
+        setBatteryData(prev => ({
+          ...prev,
+          percentage: Math.round(batteryLevel * 100),
+          isCharging: isCharging,
+        }));
+
+        setChargeData(prev => ({
+          ...prev,
+          type: isCharging ? (prev.current > 1500 ? 'Fast' : 'Standard') : 'Not Charging',
+          authenticity: analyzeBatteryPattern(batteryLevel, isCharging),
+        }));
+      }
     } catch (error) {
       console.log('Error getting battery info:', error);
-      // Fallback to simulation if real data unavailable
+      // Fallback to simulation only if native/device APIs fail
       simulateRealtimeChanges();
     }
   };

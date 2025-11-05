@@ -15,6 +15,7 @@ import com.facebook.react.bridge.Arguments;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import android.app.ActivityManager;
+import android.util.Log;
 import android.app.KeyguardManager;
 import android.os.PowerManager;
 import android.content.BroadcastReceiver;
@@ -22,9 +23,10 @@ import android.content.ComponentName;
 import java.util.List;
 
 public class ChargerStatsModule extends ReactContextBaseJavaModule {
-
+    private static final String TAG = "ChargerStatsModule";
     private final ReactApplicationContext reactContext;
     private BroadcastReceiver batteryReceiver;
+    private boolean debugMode = false;
 
     public ChargerStatsModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -33,21 +35,15 @@ public class ChargerStatsModule extends ReactContextBaseJavaModule {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
-                if (Intent.ACTION_POWER_CONNECTED.equals(action) || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
+                if (Intent.ACTION_BATTERY_CHANGED.equals(action)
+                    || Intent.ACTION_POWER_CONNECTED.equals(action)
+                    || Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
                     WritableMap stats = getCurrentBatteryStats();
-                    boolean showPopup = false;
+                    boolean showPopup = Intent.ACTION_POWER_CONNECTED.equals(action);
 
-                    if (Intent.ACTION_POWER_CONNECTED.equals(action)) {
-                        // Always try to show the popup data, let RN decide if it should render
-                        showPopup = true;
-                         if (!isAppInForeground() && isScreenOnAndUnlocked()) {
-                            // Launch the transparent activity when app is in background
-                            Intent popupIntent = new Intent(reactContext, ChargeCardPopupActivity.class);
-                            popupIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            reactContext.startActivity(popupIntent);
-                        }
-                    } else { // ACTION_POWER_DISCONNECTED
-                        showPopup = false; // Hide popup
+                    if (debugMode) {
+                        Log.d(TAG, "Battery Event: " + action);
+                        Log.d(TAG, "Battery Stats: " + stats.toString());
                     }
 
                     WritableMap eventData = Arguments.createMap();
@@ -60,6 +56,12 @@ public class ChargerStatsModule extends ReactContextBaseJavaModule {
                 }
             }
         };
+    }
+
+    @ReactMethod
+    public void setDebugMode(boolean enabled) {
+        debugMode = enabled;
+        if (debugMode) Log.d(TAG, "Debug mode enabled from JS");
     }
 
     @NonNull

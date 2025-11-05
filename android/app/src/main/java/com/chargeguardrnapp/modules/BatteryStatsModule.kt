@@ -23,7 +23,7 @@ class BatteryStatsModule(reactContext: ReactApplicationContext) : ReactContextBa
     override fun getName(): String = "BatteryStatsModule"
 
     @ReactMethod
-    fun getAppUsageStats(promise: Promise) {
+    fun getAppUsageStats(includeSystem: Boolean, promise: Promise) {
         try {
             val usageStatsManager = reactApplicationContext.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
             val packageManager = reactApplicationContext.packageManager
@@ -47,10 +47,20 @@ class BatteryStatsModule(reactContext: ReactApplicationContext) : ReactContextBa
                 .mapNotNull { stat ->
                     try {
                         val appInfo = packageManager.getApplicationInfo(stat.packageName, 0)
-                        // Include only non-system apps
-                        if (appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0) {
+                        if (includeSystem) {
+                            // include everything when the flag is true
                             stat to appInfo
-                        } else null
+                        } else {
+                            // Include non-system apps and some popular system apps
+                            if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0) ||
+                                stat.packageName.startsWith("com.google.android") ||
+                                stat.packageName.startsWith("com.android.chrome") ||
+                                stat.packageName.startsWith("com.google.android.youtube") ||
+                                stat.packageName.startsWith("com.google.android.gm") ||
+                                stat.packageName.startsWith("com.google.android.apps")) {
+                                stat to appInfo
+                            } else null
+                        }
                     } catch (e: PackageManager.NameNotFoundException) {
                         null
                     }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,9 @@ import {
   Image,
   ActivityIndicator,
   Dimensions,
-  PermissionsAndroid,
   Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { NativeModules } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -20,29 +21,14 @@ import ScreenBackground from '../components/ScreenBackground';
 const { BatteryStatsModule } = NativeModules;
 const { width, height } = Dimensions.get('window');
 
-interface AppUsageStats {
-  packageName: string;
-  appName: string;
-  powerUsage: number;
-  usageTime: number;
-  backgroundTime: number;
-  lastTimeUsed: number;
-  icon: string;
-}
-
-interface DetailedStats extends AppUsageStats {
-  averagePowerDraw: number;
-  backgroundPowerUsage: number;
-  foregroundPowerUsage: number;
-  cpuTimeMs: number;
-  wakelocksCount: number;
-}
-
 export const InsightsScreen = () => {
   const [loading, setLoading] = useState(true);
-  const [appStats, setAppStats] = useState<AppUsageStats[]>([]);
-  const [selectedApp, setSelectedApp] = useState<DetailedStats | null>(null);
+  const [allAppStats, setAllAppStats] = useState([]);
+  const [showSystemApps, setShowSystemApps] = useState(false);
+  const [selectedApp, setSelectedApp] = useState(null);
   const [hasPermission, setHasPermission] = useState(false);
+  const toggleAnim = useRef(new Animated.Value(showSystemApps ? 1 : 0)).current;
+  const animatedWidths = useRef(new Map()).current;
 
   useEffect(() => {
     checkAndRequestPermission();
@@ -83,11 +69,49 @@ export const InsightsScreen = () => {
     }
   };
 
-  const loadAppUsageStats = async () => {
+  const loadAppUsageStats = async (includeSystem = showSystemApps) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const stats = await BatteryStatsModule.getAppUsageStats();
-      setAppStats(stats);
+      const stats = await BatteryStatsModule.getAppUsageStats(includeSystem);
+      // Deduplicate and aggregate by packageName
+      const statsWithIds = (stats || []).map((s) => ({
+        ...s,
+        id: `${s.packageName}`,
+      }));
+      const aggregated = new Map();
+      statsWithIds.forEach((s) => {
+        if (!s || !s.packageName) return;
+        const key = s.packageName;
+        const existing = aggregated.get(key);
+        if (!existing) {
+          aggregated.set(key, { ...s });
+        } else {
+          existing.powerUsage = (existing.powerUsage || 0) + (s.powerUsage || 0);
+          existing.usageTime = Math.max(existing.usageTime || 0, s.usageTime || 0);
+          if (s.icon) existing.icon = s.icon;
+          if (s.appName) existing.appName = s.appName;
+        }
+      });
+      let results = Array.from(aggregated.values());
+      results.sort((a, b) => (b.powerUsage || 0) - (a.powerUsage || 0));
+      setAllAppStats(results.map((r) => ({ ...r, id: r.packageName })));
+      // Animate power bars
+      const maxPower = results.length > 0 ? Math.max(...results.map(r => r.powerUsage || 0)) : 1;
+      results.forEach(item => {
+        const key = item.packageName;
+        const targetPercent = maxPower > 0 ? ((item.powerUsage || 0) / maxPower) * 100 : 0;
+        let av = animatedWidths.get(key);
+        if (!av) {
+          av = new Animated.Value(0);
+          animatedWidths.set(key, av);
+        }
+        Animated.timing(av, {
+          toValue: targetPercent,
+          duration: 600,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }).start();
+      });
     } catch (error) {
       console.error('Error loading app stats:', error);
       Alert.alert('Error', 'Failed to load app statistics');
@@ -95,6 +119,15 @@ export const InsightsScreen = () => {
       setLoading(false);
     }
   };
+
+  const toggleShowSystemApps = useCallback(() => {
+    const next = !showSystemApps;
+    setShowSystemApps(next);
+    Animated.sequence([
+      Animated.timing(toggleAnim, { toValue: next ? 1 : 0, duration: 300, useNativeDriver: true, easing: Easing.out(Easing.quad) }),
+    ]).start();
+    loadAppUsageStats(next);
+  }, [showSystemApps, toggleAnim]);
 
   const showAppDetails = async (packageName: string) => {
     try {
@@ -112,45 +145,37 @@ export const InsightsScreen = () => {
     return hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
   };
 
-  const renderAppItem = ({ item }: { item: AppUsageStats }) => (
-    <TouchableOpacity
-      onPress={() => showAppDetails(item.packageName)}
-      style={styles.appItem}>
-      <View style={styles.appHeader}>
+  const renderAppItem = ({ item }) => {
+    const av = animatedWidths.get(item.packageName) || new Animated.Value(0);
+    const widthInterpolate = av.interpolate({
+      inputRange: [0, 100],
+      outputRange: ['0%', '100%'],
+    });
+    return (
+      <TouchableOpacity
+        onPress={() => showAppDetails(item.packageName)}
+        style={styles.appItem}>
+        <View style={styles.appHeader}>
           <View style={[styles.appIcon, !item.icon && styles.appIconPlaceholder]}>
             {item.icon ? (
-              <Image 
-                source={{ uri: `data:image/png;base64,${item.icon}` }}
-                style={styles.appIconImage}
-              />
+              <Image source={{ uri: `data:image/png;base64,${item.icon}` }} style={styles.appIconImage} />
             ) : (
-              <Text style={styles.appIconLetter}>
-                {item.appName.charAt(0).toUpperCase()}
-              </Text>
+              <Text style={styles.appIconLetter}>{item.appName ? item.appName.charAt(0).toUpperCase() : '?'}</Text>
             )}
           </View>
-        <View style={styles.appInfo}>
-          <Text style={styles.appName}>{item.appName}</Text>
-          <Text style={styles.packageName}>{item.packageName}</Text>
+          <View style={styles.appInfo}>
+            <Text style={styles.appName}>{item.appName}</Text>
+            <Text style={styles.packageName}>{item.packageName}</Text>
+          </View>
+          <View style={styles.statsContainer}>
+            <Text style={styles.powerUsage}>{(item.powerUsage || 0).toFixed(1)}mAh</Text>
+            <Text style={styles.usageTime}>{formatDuration(item.usageTime || 0)}</Text>
+          </View>
         </View>
-        <View style={styles.statsContainer}>
-          <Text style={styles.powerUsage}>{item.powerUsage.toFixed(1)}mAh</Text>
-          <Text style={styles.usageTime}>{formatDuration(item.usageTime)}</Text>
-        </View>
-      </View>
-      <View
-        style={[
-          styles.powerBar,
-          {
-            width: appStats.length > 0
-              ? `${(item.powerUsage / Math.max(...appStats.map(stat => stat.powerUsage))) * 100}%`
-              : '0%',
-            backgroundColor: theme.colors.primary,
-          },
-        ]}
-      />
-    </TouchableOpacity>
-  );
+        <Animated.View style={[styles.powerBar, { width: widthInterpolate, backgroundColor: theme.colors.primary }]} />
+      </TouchableOpacity>
+    );
+  };
 
   const renderAppDetails = () => {
     if (!selectedApp) return null;
@@ -291,14 +316,42 @@ export const InsightsScreen = () => {
   return (
     <ScreenBackground>
       <View style={styles.container}>
-        <Text style={styles.title}>App Power Usage</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>App Power Usage</Text>
+          {(() => {
+            const bg = showSystemApps ? theme.colors.primary : theme.colors.elevation3;
+            const border = showSystemApps ? 'transparent' : theme.colors.border;
+            const tint = showSystemApps ? theme.colors.text : theme.colors.textSecondary;
+            return (
+              <TouchableOpacity
+                onPress={toggleShowSystemApps}
+                accessibilityRole="button"
+                accessibilityLabel={showSystemApps ? 'Hide system apps' : 'Show system apps'}
+                activeOpacity={0.85}
+                style={[styles.systemToggle, { backgroundColor: bg, borderColor: border }]}
+              >
+                <Animated.View style={{ transform: [{ scale: toggleAnim.interpolate({ inputRange: [0,1], outputRange: [1, 1.08] }) }]}}>
+                  <Icon
+                    name={showSystemApps ? 'visibility' : 'visibility-off'}
+                    size={16}
+                    color={tint}
+                    style={{ marginRight: 8 }}
+                  />
+                </Animated.View>
+                <Text style={[styles.systemToggleText, { color: tint }]}>
+                  {showSystemApps ? 'Showing system' : 'Show system'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })()}
+        </View>
         <FlatList
-          data={appStats}
+          data={allAppStats}
           renderItem={renderAppItem}
-          keyExtractor={item => item.packageName}
+          keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
-          onRefresh={loadAppUsageStats}
+          onRefresh={() => loadAppUsageStats(showSystemApps)}
           refreshing={loading}
         />
         {renderAppDetails()}
@@ -312,48 +365,22 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
-  list: {
-    paddingBottom: 100,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  systemToggle: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    // backgroundColor and borderColor are applied inline to reuse theme toggles
   },
-  loadingText: {
-    color: theme.colors.text,
-    marginTop: 16,
-    fontSize: 16,
-  },
-  permissionText: {
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  permissionButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  permissionButtonText: {
-    color: theme.colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  appItem: {
-    backgroundColor: theme.colors.elevation1,
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
+  systemToggleActive: {
   },
   appHeader: {
     flexDirection: 'row',
