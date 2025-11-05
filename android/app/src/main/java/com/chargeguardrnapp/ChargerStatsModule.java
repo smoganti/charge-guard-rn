@@ -27,6 +27,7 @@ public class ChargerStatsModule extends ReactContextBaseJavaModule {
     private final ReactApplicationContext reactContext;
     private BroadcastReceiver batteryReceiver;
     private boolean debugMode = false;
+    private boolean receiverRegistered = false;
 
     public ChargerStatsModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -98,40 +99,70 @@ public class ChargerStatsModule extends ReactContextBaseJavaModule {
     private WritableMap getCurrentBatteryStats() {
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = reactContext.registerReceiver(null, ifilter);
-
-        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        float batteryPct = level * 100 / (float)scale;
-
-        int temperature = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
-        double tempCelsius = temperature / 10.0;
-        int voltage = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
-        int pluggedStatus = batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
-        boolean isCharging = pluggedStatus == BatteryManager.BATTERY_PLUGGED_AC ||
-                             pluggedStatus == BatteryManager.BATTERY_PLUGGED_USB ||
-                             pluggedStatus == BatteryManager.BATTERY_PLUGGED_WIRELESS;
-
-        BatteryManager bm = (BatteryManager) reactContext.getSystemService(Context.BATTERY_SERVICE);
-        long currentNow = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
-        double power = (currentNow / 1000.0) * (voltage / 1000.0); // in Watts
-
-        long timeToFullMillis = -1;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) { // P for API 28
-             timeToFullMillis = bm.computeChargeTimeRemaining();
-        }
-
-        // Calculate score
-        int score = calculateChargeScore(power * 1000, tempCelsius); // power in mW for calculation
-
         WritableMap stats = Arguments.createMap();
-        stats.putDouble("batteryLevel", batteryPct);
-        stats.putBoolean("isCharging", isCharging);
-        stats.putDouble("temperature", tempCelsius);
-        stats.putDouble("power", power); // in Watts
-        stats.putDouble("voltage", voltage);
-        stats.putDouble("current", currentNow);
-        stats.putDouble("eta", timeToFullMillis != -1 ? timeToFullMillis / 60000.0 : -1); // in minutes
-        stats.putInt("score", score); // Add the score
+        try {
+            if (batteryStatus == null) {
+                // return empty map if we can't get a snapshot
+                return stats;
+            }
+
+            int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            double batteryPct = (scale > 0 && level >= 0) ? (level * 100.0 / scale) : 0.0;
+
+            int temperature = batteryStatus.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1);
+            double tempCelsius = temperature >= 0 ? (temperature / 10.0) : -1;
+            int voltage = batteryStatus.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+            int pluggedStatus = batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+            boolean isCharging = pluggedStatus == BatteryManager.BATTERY_PLUGGED_AC ||
+                                 pluggedStatus == BatteryManager.BATTERY_PLUGGED_USB ||
+                                 pluggedStatus == BatteryManager.BATTERY_PLUGGED_WIRELESS;
+
+            BatteryManager bm = null;
+            long currentNow = 0;
+            double power = 0.0;
+            long timeToFullMillis = -1;
+
+            try {
+                bm = (BatteryManager) reactContext.getSystemService(Context.BATTERY_SERVICE);
+            } catch (Exception e) {
+                bm = null;
+            }
+
+            if (bm != null) {
+                try {
+                    currentNow = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+                } catch (Exception e) {
+                    currentNow = 0;
+                }
+
+                if (voltage > 0 && currentNow != 0) {
+                    // currentNow is in microamperes on some devices, keep as best-effort mA approximation
+                    power = (currentNow / 1000.0) * (voltage / 1000.0);
+                }
+
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    try {
+                        timeToFullMillis = bm.computeChargeTimeRemaining();
+                    } catch (Exception e) {
+                        timeToFullMillis = -1;
+                    }
+                }
+            }
+
+            int score = calculateChargeScore(power * 1000.0, tempCelsius);
+
+            stats.putDouble("batteryLevel", batteryPct);
+            stats.putBoolean("isCharging", isCharging);
+            stats.putDouble("temperature", tempCelsius);
+            stats.putDouble("power", power);
+            stats.putDouble("voltage", voltage);
+            stats.putDouble("current", currentNow);
+            stats.putDouble("eta", timeToFullMillis != -1 ? (timeToFullMillis / 60000.0) : -1);
+            stats.putInt("score", score);
+        } catch (Exception e) {
+            if (debugMode) Log.e(TAG, "getCurrentBatteryStats error", e);
+        }
 
         return stats;
     }

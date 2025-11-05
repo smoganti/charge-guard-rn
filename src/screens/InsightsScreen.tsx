@@ -21,14 +21,29 @@ import ScreenBackground from '../components/ScreenBackground';
 const { BatteryStatsModule } = NativeModules;
 const { width, height } = Dimensions.get('window');
 
+interface AppUsageStats {
+  packageName: string;
+  appName?: string;
+  powerUsage?: number;
+  usageTime?: number;
+  backgroundTime?: number;
+  lastTimeUsed?: number;
+  icon?: string;
+  cpuTimeMs?: number;
+  wakelocksCount?: number;
+  foregroundPowerUsage?: number;
+  backgroundPowerUsage?: number;
+  id?: string;
+}
+
 export const InsightsScreen = () => {
-  const [loading, setLoading] = useState(true);
-  const [allAppStats, setAllAppStats] = useState([]);
-  const [showSystemApps, setShowSystemApps] = useState(false);
-  const [selectedApp, setSelectedApp] = useState(null);
-  const [hasPermission, setHasPermission] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [allAppStats, setAllAppStats] = useState<AppUsageStats[]>([]);
+  const [showSystemApps, setShowSystemApps] = useState<boolean>(false);
+  const [selectedApp, setSelectedApp] = useState<AppUsageStats | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean>(false);
   const toggleAnim = useRef(new Animated.Value(showSystemApps ? 1 : 0)).current;
-  const animatedWidths = useRef(new Map()).current;
+  const animatedWidths = useRef<Map<string, Animated.Value>>(new Map()).current;
 
   useEffect(() => {
     checkAndRequestPermission();
@@ -74,12 +89,12 @@ export const InsightsScreen = () => {
     try {
       const stats = await BatteryStatsModule.getAppUsageStats(includeSystem);
       // Deduplicate and aggregate by packageName
-      const statsWithIds = (stats || []).map((s) => ({
+      const statsWithIds: AppUsageStats[] = (stats || []).map((s: any) => ({
         ...s,
         id: `${s.packageName}`,
       }));
-      const aggregated = new Map();
-      statsWithIds.forEach((s) => {
+      const aggregated: Map<string, AppUsageStats> = new Map();
+      statsWithIds.forEach((s: AppUsageStats) => {
         if (!s || !s.packageName) return;
         const key = s.packageName;
         const existing = aggregated.get(key);
@@ -94,7 +109,7 @@ export const InsightsScreen = () => {
       });
       let results = Array.from(aggregated.values());
       results.sort((a, b) => (b.powerUsage || 0) - (a.powerUsage || 0));
-      setAllAppStats(results.map((r) => ({ ...r, id: r.packageName })));
+  setAllAppStats(results.map((r) => ({ ...r, id: r.packageName })));
       // Animate power bars
       const maxPower = results.length > 0 ? Math.max(...results.map(r => r.powerUsage || 0)) : 1;
       results.forEach(item => {
@@ -145,7 +160,7 @@ export const InsightsScreen = () => {
     return hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
   };
 
-  const renderAppItem = ({ item }) => {
+  const renderAppItem = ({ item }: { item: AppUsageStats }) => {
     const av = animatedWidths.get(item.packageName) || new Animated.Value(0);
     const widthInterpolate = av.interpolate({
       inputRange: [0, 100],
@@ -164,11 +179,11 @@ export const InsightsScreen = () => {
             )}
           </View>
           <View style={styles.appInfo}>
-            <Text style={styles.appName}>{item.appName}</Text>
-            <Text style={styles.packageName}>{item.packageName}</Text>
+              <Text style={styles.appName}>{item.appName}</Text>
+              <Text style={styles.packageName}>{item.packageName}</Text>
           </View>
           <View style={styles.statsContainer}>
-            <Text style={styles.powerUsage}>{(item.powerUsage || 0).toFixed(1)}mAh</Text>
+            <Text style={styles.powerUsage}>{((item.powerUsage || 0)).toFixed(1)}mAh</Text>
             <Text style={styles.usageTime}>{formatDuration(item.usageTime || 0)}</Text>
           </View>
         </View>
@@ -197,7 +212,7 @@ export const InsightsScreen = () => {
                 />
               ) : (
                 <Text style={styles.appIconLetter}>
-                  {selectedApp.appName.charAt(0).toUpperCase()}
+                  {selectedApp.appName?.charAt(0).toUpperCase()}
                 </Text>
               )}
             </View>
@@ -211,7 +226,7 @@ export const InsightsScreen = () => {
           <View style={styles.statItem}>
             <Icon name="flash-on" size={24} color={theme.colors.primary} />
             <Text style={styles.statValue}>
-              {selectedApp.powerUsage.toFixed(1)}mAh
+              {(selectedApp.powerUsage || 0).toFixed(1)}mAh
             </Text>
             <Text style={styles.statLabel}>Total Power Usage</Text>
           </View>
@@ -219,7 +234,7 @@ export const InsightsScreen = () => {
           <View style={styles.statItem}>
             <Icon name="access-time" size={24} color={theme.colors.primary} />
             <Text style={styles.statValue}>
-              {formatDuration(selectedApp.usageTime)}
+              {formatDuration(selectedApp.usageTime || 0)}
             </Text>
             <Text style={styles.statLabel}>Active Usage</Text>
           </View>
@@ -227,14 +242,14 @@ export const InsightsScreen = () => {
           <View style={styles.statItem}>
             <Icon name="storage" size={24} color={theme.colors.primary} />
             <Text style={styles.statValue}>
-              {(selectedApp.cpuTimeMs / 1000).toFixed(1)}s
+              {((selectedApp.cpuTimeMs || 0) / 1000).toFixed(1)}s
             </Text>
             <Text style={styles.statLabel}>CPU Time</Text>
           </View>
 
           <View style={styles.statItem}>
             <Icon name="notifications" size={24} color={theme.colors.primary} />
-            <Text style={styles.statValue}>{selectedApp.wakelocksCount}</Text>
+            <Text style={styles.statValue}>{selectedApp.wakelocksCount || 0}</Text>
             <Text style={styles.statLabel}>Wakelocks</Text>
           </View>
         </View>
@@ -248,7 +263,7 @@ export const InsightsScreen = () => {
                 style={[
                   styles.breakdownFill,
                   {
-                    width: `${(selectedApp.foregroundPowerUsage / selectedApp.powerUsage) * 100}%`,
+                    width: `${((selectedApp.foregroundPowerUsage || 0) / (selectedApp.powerUsage || 1)) * 100}%`,
                     backgroundColor: theme.colors.primary,
                   },
                 ]}
@@ -266,7 +281,7 @@ export const InsightsScreen = () => {
                 style={[
                   styles.breakdownFill,
                   {
-                    width: `${(selectedApp.backgroundPowerUsage / selectedApp.powerUsage) * 100}%`,
+                    width: `${((selectedApp.backgroundPowerUsage || 0) / (selectedApp.powerUsage || 1)) * 100}%`,
                     backgroundColor: theme.colors.secondary,
                   },
                 ]}
@@ -348,7 +363,7 @@ export const InsightsScreen = () => {
         <FlatList
           data={allAppStats}
           renderItem={renderAppItem}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => (item.id ? item.id : item.packageName)}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
           onRefresh={() => loadAppUsageStats(showSystemApps)}
@@ -380,6 +395,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     // backgroundColor and borderColor are applied inline to reuse theme toggles
   },
+  systemToggleText: {
+    color: theme.colors.textSecondary,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  list: {
+    paddingBottom: 100,
+  },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  loadingText: { color: theme.colors.text, marginTop: 16, fontSize: 16 },
+  permissionText: { color: theme.colors.textSecondary, textAlign: 'center', marginTop: 8, marginBottom: 24 },
+  permissionButton: { backgroundColor: theme.colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
+  permissionButtonText: { color: theme.colors.text },
+  appItem: { backgroundColor: theme.colors.elevation1, borderRadius: 12, marginBottom: 12, overflow: 'hidden' },
   systemToggleActive: {
   },
   appHeader: {
